@@ -21,43 +21,37 @@ public class PagoController {
     @Autowired
     private CloudWatchService cloudWatchService;
 
-    // --- POST /pagos/procesar ---
     @PostMapping("/procesar")
     public Pago procesarPago(@RequestBody Pago pago) {
-        logger.info("POST /pagos/procesar - Procesando pago para orden: {}", pago.getOrdenId());
         if (pago.getEstado() == null) pago.setEstado("PROCESADO");
         Pago guardado = pagoRepository.save(pago);
-        cloudWatchService.enviarLog("Pago procesado ID: " + guardado.getId() + " para Orden: " + pago.getOrdenId());
+        cloudWatchService.enviarLog("Acceso a POST /pagos/procesar - Orden: " + pago.getOrdenId() + " (Monto: " + pago.getMonto() + ")");
         return guardado;
     }
 
-    // --- GET /pagos/{id} ---
     @GetMapping("/{id}")
     public ResponseEntity<Pago> obtenerPagoPorId(@PathVariable String id) {
-        logger.info("GET /pagos/{} - Buscando pago.", id);
+        cloudWatchService.enviarLog("Acceso a GET /pagos/" + id + " - Detalle de pago");
         return pagoRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- GET /pagos/orden/{ordenId} ---
     @GetMapping("/orden/{ordenId}")
     public ResponseEntity<Pago> obtenerPagoPorOrden(@PathVariable String ordenId) {
-        logger.info("GET /pagos/orden/{} - Buscando pago de la orden.", ordenId);
+        cloudWatchService.enviarLog("Acceso a GET /pagos/orden/" + ordenId + " - Consultar pago de orden");
         return pagoRepository.findByOrdenId(ordenId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- PUT /pagos/{id}/reembolso ---
     @PutMapping("/{id}/reembolso")
     public ResponseEntity<Pago> procesarReembolso(@PathVariable String id) {
-        logger.info("PUT /pagos/{}/reembolso - Iniciando reembolso", id);
         return pagoRepository.findById(id)
                 .map(pago -> {
                     pago.setEstado("REEMBOLSADO");
                     Pago actualizado = pagoRepository.save(pago);
-                    cloudWatchService.enviarLog("Pago reembolsado ID: " + id);
+                    cloudWatchService.enviarLog("Acceso a PUT /pagos/" + id + "/reembolso - Pago anulado exitosamente");
                     return ResponseEntity.ok(actualizado);
                 })
                 .orElse(ResponseEntity.notFound().build());

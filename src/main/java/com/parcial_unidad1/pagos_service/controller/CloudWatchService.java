@@ -30,14 +30,14 @@ public class CloudWatchService {
                     .build();
 
             String streamName = "pago-" + UUID.randomUUID().toString().substring(0, 8);
-            awsLogs.createLogStream(new CreateLogStreamRequest("pago-log-group", streamName));
+            awsLogs.createLogStream(new CreateLogStreamRequest("pagos", streamName));
 
             InputLogEvent evento = new InputLogEvent()
                     .withMessage(mensaje)
                     .withTimestamp(System.currentTimeMillis());
 
             PutLogEventsRequest request = new PutLogEventsRequest()
-                    .withLogGroupName("pago-log-group")
+                    .withLogGroupName("pagos")
                     .withLogStreamName(streamName)
                     .withLogEvents(Collections.singletonList(evento));
 
