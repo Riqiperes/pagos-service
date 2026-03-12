@@ -8,24 +8,21 @@ public class Pago {
 
     @Id
     private String id;
-    private String ordenId; // Aquí guardaremos el ID de la orden que se está pagando
+    private String ordenId;
+    private String metodoPago;
     private Double monto;
-    private String estado; // Ej: "PROCESADO", "RECHAZADO"
+    private String estado;
 
     public Pago() {}
 
-    public Pago(String ordenId, Double monto, String estado) {
-        this.ordenId = ordenId;
-        this.monto = monto;
-        this.estado = estado;
-    }
-
-    // Getters y Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public String getOrdenId() { return ordenId; }
     public void setOrdenId(String ordenId) { this.ordenId = ordenId; }
+
+    public String getMetodoPago() { return metodoPago; }
+    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
 
     public Double getMonto() { return monto; }
     public void setMonto(Double monto) { this.monto = monto; }
