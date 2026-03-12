@@ -1,8 +1,5 @@
 package com.parcial_unidad1.pagos_service.controller;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +21,17 @@ public class PagoController {
     @Autowired
     private CloudWatchService cloudWatchService;
 
-    // --- GET ALL ---
-    @GetMapping
-    public List<Pago> obtenerPagos() {
-        logger.info("GET /pagos - Obteniendo todos los pagos.");
-        return pagoRepository.findAll();
+    // --- POST /pagos/procesar ---
+    @PostMapping("/procesar")
+    public Pago procesarPago(@RequestBody Pago pago) {
+        logger.info("POST /pagos/procesar - Procesando pago para orden: {}", pago.getOrdenId());
+        if (pago.getEstado() == null) pago.setEstado("PROCESADO");
+        Pago guardado = pagoRepository.save(pago);
+        cloudWatchService.enviarLog("Pago procesado ID: " + guardado.getId() + " para Orden: " + pago.getOrdenId());
+        return guardado;
     }
 
-    // --- GET BY ID ---
+    // --- GET /pagos/{id} ---
     @GetMapping("/{id}")
     public ResponseEntity<Pago> obtenerPagoPorId(@PathVariable String id) {
         logger.info("GET /pagos/{} - Buscando pago.", id);
@@ -40,40 +40,26 @@ public class PagoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- CREATE (POST) ---
-    @PostMapping
-    public Pago realizarPago(@RequestBody Pago pago) {
-        logger.info("POST /pagos - Realizando pago de {} para la orden: {}", pago.getMonto(), pago.getOrdenId());
-        cloudWatchService.enviarLog("Nuevo pago registrado para la orden: " + pago.getOrdenId());
-        return pagoRepository.save(pago);
-    }
-
-    // --- UPDATE (PUT) ---
-    @PutMapping("/{id}")
-    public ResponseEntity<Pago> actualizarPago(@PathVariable String id, @RequestBody Pago pagoDetalles) {
-        logger.info("PUT /pagos/{} - Actualizando pago.", id);
-        return pagoRepository.findById(id)
-                .map(pago -> {
-                    pago.setOrdenId(pagoDetalles.getOrdenId());
-                    pago.setMetodoPago(pagoDetalles.getMetodoPago());
-                    pago.setMonto(pagoDetalles.getMonto());
-                    pago.setEstado(pagoDetalles.getEstado());
-                    Pago actualizado = pagoRepository.save(pago);
-                    cloudWatchService.enviarLog("Pago actualizado: " + id);
-                    return ResponseEntity.ok(actualizado);
-                })
+    // --- GET /pagos/orden/{ordenId} ---
+    @GetMapping("/orden/{ordenId}")
+    public ResponseEntity<Pago> obtenerPagoPorOrden(@PathVariable String ordenId) {
+        logger.info("GET /pagos/orden/{} - Buscando pago de la orden.", ordenId);
+        return pagoRepository.findByOrdenId(ordenId)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- DELETE ---
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarPago(@PathVariable String id) {
-        logger.info("DELETE /pagos/{} - Eliminando pago.", id);
-        if (pagoRepository.existsById(id)) {
-            pagoRepository.deleteById(id);
-            cloudWatchService.enviarLog("Pago eliminado: " + id);
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
+    // --- PUT /pagos/{id}/reembolso ---
+    @PutMapping("/{id}/reembolso")
+    public ResponseEntity<Pago> procesarReembolso(@PathVariable String id) {
+        logger.info("PUT /pagos/{}/reembolso - Iniciando reembolso", id);
+        return pagoRepository.findById(id)
+                .map(pago -> {
+                    pago.setEstado("REEMBOLSADO");
+                    Pago actualizado = pagoRepository.save(pago);
+                    cloudWatchService.enviarLog("Pago reembolsado ID: " + id);
+                    return ResponseEntity.ok(actualizado);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }
